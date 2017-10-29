@@ -2,6 +2,8 @@
 
 set -e
 
+CLI_VERSION=1.4.0
+
 VERSIONS=(
   4.0
   4.1
@@ -10,7 +12,9 @@ VERSIONS=(
   4.4
 )
 
-echo "[LOG] Use @angular/cli@1.4.0"
+echo "[LOG] Use @angular/cli@$CLI_VERSION"
+
+npm i @angular/cli@$CLI_VERSION > /dev/null
 
 for version in ${VERSIONS[@]}
 do
@@ -18,7 +22,7 @@ do
   echo "[LOG] Benchmark for @angular/{*}@$version"
   npm i @angular/{animations,common,compiler,core,forms,http,platform-browser,platform-browser-dynamic,router,compiler-cli,language-service}@$version > /dev/null
   echo "[LOG] Generate report in output directory"
-  output=report/1.4.0/$version/
+  output=report/$CLI_VERSION/$version/
   mkdir -p $output
   echo "[LOG] Test *ng build*"
   ng build | ./build-report.js > $output/ng-build.json

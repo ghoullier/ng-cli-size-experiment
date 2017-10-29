@@ -7,13 +7,15 @@ const ms = require('pretty-ms');
 
 process.stdin.setEncoding('utf8');
 
-const DATE_PATTERN = /^\[0mDate: \[1m\[37m(.+)\[39m\[22m\[0m$/;
-const HASH_PATTERN = /^\[0mHash: \[1m\[37m(.+)\[39m\[22m\[0m$/;
-const TIME_PATTERN = /^\[0mTime: \[1m\[37m(\d+)\[39m\[22mms\[0m$/;
-const TYPE_ASSETS_PATTERN = /\[1m\[33m\[(\w+)]\[39m\[22m\[1m\[32m \[rendered\]\[39m\[22m\[0m$/;
-const ASSETS_ENTRY_PATTERN = /^\[0mchunk {\[1m\[33m(\w+)\[39m\[22m} \[1m\[32m(.+)\[39m\[22m \((\w+)\) (.+) \[1m\[33m\[(\w+)\]\[39m\[22m\[1m\[32m \[rendered\]\[39m\[22m\[0m$/
-const ASSETS_INITIAL_WHITHOUT_DEPENDENCESI_PATTERN = /^\[0mchunk {\[1m\[33m(\w+)\[39m\[22m} \[1m\[32m(.+)\[39m\[22m \((\w+)\) (.+) \[1m\[33m\[initial\]\[39m\[22m\[1m\[32m \[rendered\]\[39m\[22m\[0m$/
-const ASSETS_INITIAL_WITH_DEPENDENCIES_PATTERN = /^\[0mchunk {\[1m\[33m(\w+)\[39m\[22m} \[1m\[32m(.+)\[39m\[22m \((\w+)\) (.+) \{\[1m\[33m(\w+)\[39m\[22m\} \[1m\[33m\[initial\]\[39m\[22m\[1m\[32m \[rendered\]\[39m\[22m\[0m$$/
+const DATE_PATTERN = /^Date: (.+)$/;
+const HASH_PATTERN = /^Hash: (.+)$/;
+const TIME_PATTERN = /^Time: (\d+)ms$/;
+const TYPE_ASSETS_PATTERN = /\[(\w+)] \[rendered\]$/;
+const ASSETS_ENTRY_PATTERN = /^chunk {(\w+)} (.+) \((\w+)\) (.+) \[(\w+)\] \[rendered\]$/;
+const ASSETS_INITIAL_WHITHOUT_DEPENDENCESI_PATTERN = /^chunk {(\w+)} (.+) \((\w+)\) (.+) \[initial\] \[rendered\]$/;
+const ASSETS_INITIAL_WITH_DEPENDENCIES_PATTERN = /^chunk {(\w+)} (.+) \((\w+)\) (.+) \{(\w+)\} \[initial\] \[rendered\]$/;
+
+const SANITIZE_PATTERN = /\[\d{1,2}m/g
 
 const parseLog = ([name, artifacts, rename, size, dependency = 'root']) => ({
   name, size: bytes.parse(size)/*, dependency*/
@@ -30,19 +32,28 @@ const report = {
 process.stdin.on('readable', () => {
   const chunk = process.stdin.read();
   if (chunk !== null) {
-    const rows = chunk.split('\n').filter((row) => row)
+    const rows = chunk.split('\n')
+      .filter((row) => row)
+      .map(row => row.replace(SANITIZE_PATTERN, ''))
+      .map(row => row.replace(//, ''))
     const [$date, $hash, $time, ...$rows] = rows;
     if (DATE_PATTERN.test($date)) {
       const [, date] = DATE_PATTERN.exec($date)
       report.date = new Date(Date.parse(date))
+    } else {
+      console.warn('DATE_PATTERN.test($date)', $date)
     }
     if (HASH_PATTERN.test($hash)) {
       const [, hash] = HASH_PATTERN.exec($hash)
       report.hash = hash
+    } else {
+      console.warn('HASH_PATTERN.test($hash)', $hash)
     }
     if (TIME_PATTERN.test($time)) {
       const [, duration] = TIME_PATTERN.exec($time)
       report.duration = ms(parseInt(duration, 10))
+    } else {
+      console.warn('TIME_PATTERN.test($time)', $time)
     }
     $rows.forEach(($row) => {
       if (TYPE_ASSETS_PATTERN.test($row)) {
