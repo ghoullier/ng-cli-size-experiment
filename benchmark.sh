@@ -2,7 +2,7 @@
 
 set -e
 
-CLI_VERSION=1.4.0
+CLI_VERSION=1.5.0-rc.6
 
 VERSIONS=(
   4.0
@@ -18,18 +18,17 @@ npm i @angular/cli@$CLI_VERSION > /dev/null
 
 for version in ${VERSIONS[@]}
 do
+  output=report/$CLI_VERSION/$version/
+  mkdir -p $output
   echo ""
   echo "[LOG] Benchmark for @angular/{*}@$version"
   npm i @angular/{animations,common,compiler,core,forms,http,platform-browser,platform-browser-dynamic,router,compiler-cli,language-service}@$version > /dev/null
-  echo "[LOG] Generate report in output directory"
-  output=report/$CLI_VERSION/$version/
-  mkdir -p $output
-  echo "[LOG] Test *ng build*"
+  echo "[RUN] ng build"
   ng build | ./build-report.js > $output/ng-build.json
-  echo "[LOG] Test *ng build --prod*"
+  echo "[RUN] ng build --prod"
   ng build --prod | ./build-report.js > $output/ng-build--prod.json
-  echo "[LOG] Test *ng build --prod --build-optimizer*"
+  echo "[RUN] ng build --prod --build-optimizer"
   ng build --prod --build-optimizer | ./build-report.js > $output/ng-build--prod--build-optimizer.json
-  echo "[LOG] Test *ng build --prod --build-optimizer --app=aot*"
+  echo "[RUN] ng build --prod --build-optimizer --app=aot"
   ng build --prod --build-optimizer --app=aot | ./build-report.js > $output/ng-build--prod--build-optimizer--app=aot.json
 done
